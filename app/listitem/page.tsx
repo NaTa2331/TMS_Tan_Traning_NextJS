@@ -30,6 +30,7 @@ export default function ListItemPage() {
   let debounceTimer: NodeJS.Timeout;
 
   const currentPage = parseInt(searchParams.get('page') || '1');
+  const searchTerm = searchParams.get('search') || '';
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   const loadItems = async (page: number, search?: string) => {
@@ -70,12 +71,8 @@ export default function ListItemPage() {
   };
 
   useEffect(() => {
-    const currentSearch = searchParams.get('search') || '';
-    const searchTerm = currentSearch;
-    loadItems(currentPage, currentSearch);
-  }, [currentPage, router, searchParams]);
-
-  const [searchTerm, setSearchTerm] = useState('');
+    loadItems(currentPage, searchTerm);
+  }, [currentPage, searchTerm, router]);
 
   return (
     <div className={styles.container}>
@@ -84,7 +81,10 @@ export default function ListItemPage() {
           type="text"
           placeholder="Search items..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => {
+            const newSearchTerm = e.target.value;
+            loadItems(1, newSearchTerm);
+          }}
         />
         <button onClick={() => loadItems(1, searchTerm)}>
           <FaSearch />
