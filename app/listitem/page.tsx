@@ -9,6 +9,7 @@ type Item = {
   id: number;
   title: string;
   description: string;
+  userId: number;
 };
 
 type User = {
@@ -40,19 +41,20 @@ export default function ListItemPage() {
         fetch('/api/users'),
       ]);
 
-      if (!itemsRes.ok || !usersRes.ok) {
-        throw new Error('Failed to fetch data');
+      if (!itemsRes.ok) {
+        const errorData = await itemsRes.json();
+        throw new Error(errorData.error || 'Failed to fetch items');
+      }
+
+      if (!usersRes.ok) {
+        const errorData = await usersRes.json();
+        throw new Error(errorData.error || 'Failed to fetch users');
       }
 
       const [itemsData, usersData] = await Promise.all([
         itemsRes.json(),
         usersRes.json(),
       ]);
-
-      // Ensure we're getting the correct data structure
-      if (!itemsData.items) {
-        throw new Error('Invalid response format');
-      }
 
       setItems(itemsData.items);
       setUsers(usersData);
@@ -67,6 +69,33 @@ export default function ListItemPage() {
       console.error('Error loading items:', error);
       setItems([]);
       setTotalItems(0);
+      alert('Failed to load items. Please try again later.');
+    }
+  };
+
+  const handleAddItem = async () => {
+    try {
+      const response = await fetch('/api/listitem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          title: newTitle, 
+          description: newDesc,
+          userId: users[0]?.id // Use first user's ID
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add item');
+      }
+
+      setNewTitle('');
+      setNewDesc('');
+      loadItems(1, searchTerm);
+    } catch (error) {
+      console.error('Error adding item:', error);
+      alert('Failed to add item. Please try again.');
     }
   };
 
@@ -106,16 +135,7 @@ export default function ListItemPage() {
           onChange={(e) => setNewDesc(e.target.value)}
         />
         <button
-          onClick={async () => {
-            await fetch('/api/listitem', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ title: newTitle, description: newDesc }),
-            });
-            setNewTitle('');
-            setNewDesc('');
-            loadItems(1, searchTerm); // Reload list
-          }}
+          onClick={handleAddItem}
         >
           Add Item
         </button>
