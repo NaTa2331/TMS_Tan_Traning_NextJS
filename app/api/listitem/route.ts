@@ -1,142 +1,87 @@
-import { NextResponse } from 'next/server';
-import { NextRequest } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
-const dataFilePath = path.join(process.cwd(), 'app', 'api', 'listitem', 'data.json');
-
-interface ListItem {
-  id: number;
-  title: string;
-  description: string;
-}
-
-interface ListData {
-  items: ListItem[];
-}
-
-async function readData(): Promise<ListData> {
-  try {
-    const data = await fs.readFile(dataFilePath, 'utf-8');
-    const parsedData = JSON.parse(data);
-    
-    // If the data is just an array, wrap it in an items object
-    if (Array.isArray(parsedData)) {
-      return { items: parsedData };
-    }
-    
-    return parsedData;
-  } catch (error) {
-    console.error('Error reading data:', error);
-    return { items: [] };
-  }
-}
-
-async function writeData(data: ListData) {
-  await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2));
-}
-
+// GET all items with optional pagination and search
 export async function GET(request: NextRequest) {
   try {
-    const data = await readData();
-    const items = data.items || [];
-    
+    const search = request.nextUrl.searchParams.get('search') || '';
     const page = parseInt(request.nextUrl.searchParams.get('page') || '1');
     const limit = parseInt(request.nextUrl.searchParams.get('limit') || '9');
     const offset = (page - 1) * limit;
-    const search = request.nextUrl.searchParams.get('search') || '';
-    
-    const filteredItems = items.filter((item: ListItem) => 
-      item.title.toLowerCase().includes(search.toLowerCase()) ||
-      item.description.toLowerCase().includes(search.toLowerCase())
-    );
-    
-    const paginatedItems = filteredItems.slice(offset, offset + limit);
-    const response = NextResponse.json(paginatedItems);
-    response.headers.set('X-Total-Count', filteredItems.length.toString());
-    
+
+    const [items, total] = await Promise.all([
+      prisma.listItem.findMany({
+        where: {
+          OR: [
+            { title: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+          ],
+        },
+        skip: offset,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.listItem.count({
+        where: {
+          OR: [
+            { title: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+          ],
+        },
+      }),
+    ]);
+
+    const response = NextResponse.json(items);
+    response.headers.set('X-Total-Count', total.toString());
     return response;
   } catch (error) {
-    console.error('Error in GET request:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch items' },
-      { status: 500 }
-    );
+    console.error('GET error:', error);
+    return NextResponse.json({ error: 'Failed to fetch items' }, { status: 500 });
   }
 }
 
+// POST - Add new item
 export async function POST(request: NextRequest) {
   try {
-    const data = await readData();
-    const items = data.items || [];
-    
-    const newItem = await request.json();
-    const id = Math.max(...items.map((item: ListItem) => item.id), 0) + 1;
-    const item: ListItem = {
-      id,
-      ...newItem
-    };
-    
-    items.push(item);
-    await writeData({ items });
-    
-    return NextResponse.json(item);
+    const { title, description } = await request.json();
+    const newItem = await prisma.listItem.create({
+      data: { title, description },
+    });
+    return NextResponse.json(newItem);
   } catch (error) {
-    console.error('Error in POST request:', error);
-    return NextResponse.json(
-      { error: 'Failed to create item' },
-      { status: 500 }
-    );
+    console.error('POST error:', error);
+    return NextResponse.json({ error: 'Failed to create item' }, { status: 500 });
   }
 }
 
+// PUT - Update item
 export async function PUT(request: NextRequest) {
   try {
-    const data = await readData();
-    const items = data.items || [];
-    
-    const { id, ...updates } = await request.json();
-    const index = items.findIndex((item: ListItem) => item.id === id);
-    
-    if (index === -1) {
-      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
-    }
-    
-    items[index] = { ...items[index], ...updates };
-    await writeData({ items });
-    
-    return NextResponse.json(items[index]);
+    const { id, title, description } = await request.json();
+    const updated = await prisma.listItem.update({
+      where: { id },
+      data: { title, description },
+    });
+    return NextResponse.json(updated);
   } catch (error) {
-    console.error('Error in PUT request:', error);
-    return NextResponse.json(
-      { error: 'Failed to update item' },
-      { status: 500 }
-    );
+    console.error('PUT error:', error);
+    return NextResponse.json({ error: 'Failed to update item' }, { status: 500 });
   }
 }
 
+// DELETE - Remove item
 export async function DELETE(request: NextRequest) {
   try {
-    const data = await readData();
-    const items = data.items || [];
-    
     const { searchParams } = new URL(request.url);
     const id = parseInt(searchParams.get('id') || '0');
-    const index = items.findIndex((item: ListItem) => item.id === id);
-    
-    if (index === -1) {
-      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
-    }
-    
-    items.splice(index, 1);
-    await writeData({ items });
-    
+
+    await prisma.listItem.delete({
+      where: { id },
+    });
+
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error in DELETE request:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete item' },
-      { status: 500 }
-    );
+    console.error('DELETE error:', error);
+    return NextResponse.json({ error: 'Failed to delete item' }, { status: 500 });
   }
 }
