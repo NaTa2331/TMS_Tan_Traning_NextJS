@@ -35,8 +35,8 @@ export default function ListItemPage() {
   const loadItems = async (page: number, search?: string) => {
     try {
       const [itemsRes, usersRes] = await Promise.all([
-        fetch(`http://localhost:3000/api/listitem?page=${page}&limit=${itemsPerPage}${search ? `&search=${search}` : ''}`),
-        fetch('http://localhost:3000/api/users'),
+        fetch(`/api/listitem?page=${page}&limit=${itemsPerPage}${search ? `&search=${search}` : ''}`),
+        fetch('/api/users'),
       ]);
 
       const [itemsData, usersData] = await Promise.all([
