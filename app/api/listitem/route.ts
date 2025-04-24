@@ -28,6 +28,8 @@ export async function GET(request: NextRequest) {
     : {};
 
   try {
+    console.log('Fetching items with params:', { page, limit, search });
+    
     const [items, total] = await Promise.all([
       prisma.listItem.findMany({
         where,
@@ -38,6 +40,9 @@ export async function GET(request: NextRequest) {
       prisma.listItem.count({ where }),
     ]);
 
+    console.log('Fetched items:', items);
+    console.log('Total items:', total);
+
     return NextResponse.json(
       { items },
       {
@@ -46,10 +51,10 @@ export async function GET(request: NextRequest) {
         },
       }
     );
-  } catch (error) {
-    console.error('Error fetching items:', error);
+  } catch (error:any) {
+    console.error('Error details:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch items' },
+      { error: 'Failed to fetch items', details: error.message },
       { status: 500 }
     );
   }
