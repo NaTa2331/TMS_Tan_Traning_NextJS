@@ -32,11 +32,18 @@ export async function GET(request: NextRequest) {
       })
     ]);
 
-    const response = NextResponse.json(items);
+    const response = NextResponse.json({
+      items: Array.isArray(items) ? items : [items],
+      total: total
+    });
     response.headers.set('X-Total-Count', total.toString());
     return response;
   } catch (err) {
-    return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
+    console.error('Error fetching items:', err);
+    return NextResponse.json(
+      { error: 'Failed to fetch data' },
+      { status: 500 }
+    );
   }
 }
 

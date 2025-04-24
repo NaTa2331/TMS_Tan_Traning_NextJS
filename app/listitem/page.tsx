@@ -39,31 +39,39 @@ export default function ListItemPage() {
         fetch('/api/users'),
       ]);
 
+      if (!itemsRes.ok || !usersRes.ok) {
+        throw new Error('Failed to fetch data');
+      }
+
       const [itemsData, usersData] = await Promise.all([
         itemsRes.json(),
         usersRes.json(),
       ]);
 
-      setItems(itemsData);
+      // Ensure we're getting the correct data structure
+      if (!itemsData.items) {
+        throw new Error('Invalid response format');
+      }
+
+      setItems(itemsData.items);
       setUsers(usersData);
       setTotalItems(Number(itemsRes.headers.get('X-Total-Count')));
 
       // Update URL
-      if (page !== currentPage || search !== searchTerm) {
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('page', page.toString());
-        if (search) params.set('search', search);
-        else params.delete('search');
-        router.push(`?${params.toString()}`);
-      }
+      const params = new URLSearchParams();
+      params.set('page', page.toString());
+      if (search) params.set('search', search);
+      router.push(`?${params.toString()}`);
     } catch (error) {
       console.error('Error loading items:', error);
+      setItems([]);
+      setTotalItems(0);
     }
   };
 
   useEffect(() => {
     const currentSearch = searchParams.get('search') || '';
-    setSearchTerm(currentSearch);
+    const searchTerm = currentSearch;
     loadItems(currentPage, currentSearch);
   }, [currentPage, router, searchParams]);
 
