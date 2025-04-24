@@ -40,7 +40,7 @@ export default function ListItemPage() {
       //   // fetch(`/api/listitem?page=${page}&limit=${itemsPerPage}${search ? `&search=${search}` : ''}`),
       //   // fetch('/api/users'),
       // ]);
-      const itemsRes = await fetch(`/api/listitem?page=${page}&limit=${itemsPerPage}${search ? `&search=${search}` : ''}`);
+      const itemsRes = await fetch(`https://tmstantraningnextjs-production.up.railway.app/api/listitem?page=${page}&limit=${itemsPerPage}${search ? `&search=${search}` : ''}`);
 
 
       if (!itemsRes.ok) {
@@ -80,7 +80,7 @@ export default function ListItemPage() {
 
   const handleAddItem = async () => {
     try {
-      const response = await fetch('/api/listitem', {
+      const response = await fetch('https://tmstantraningnextjs-production.up.railway.app/api/listitem', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -176,7 +176,7 @@ export default function ListItemPage() {
 
             <button
               onClick={async () => {
-                await fetch(`/api/listitem?id=${item.id}`, {
+                await fetch(`https://tmstantraningnextjs-production.up.railway.app/api/listitem?id=${item.id}`, {
                   method: 'DELETE',
                 });
                 loadItems(currentPage, searchTerm);
