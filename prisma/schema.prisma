@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "lib/prisma/client"
 }
 
 datasource db {
@@ -14,7 +13,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Item {
+model ListItem {
   id          Int     @id @default(autoincrement())
   title       String
   description String
