@@ -1,0 +1,22 @@
+/* styles/BackButton.module.css */
+.backButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #333;
+    background-color: #f0f0f0;
+    transition: all 0.2s ease;
+  }
+  
+  .backButton:hover {
+    background-color: #e0e0e0;
+    transform: translateY(-1px);
+  }
+  
+  .backButton svg {
+    width: 16px;
+    height: 16px;
+  }

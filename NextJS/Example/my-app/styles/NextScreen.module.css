@@ -1,0 +1,59 @@
+.container {
+  text-align: center;
+  padding: 20px;
+}
+
+.imageContainer {
+  margin-bottom: 20px;
+}
+
+.desktopImage {
+  display: block;
+  margin: 0 auto;  
+  max-width: 100%; 
+}
+
+.mobileImage {
+  display: none;
+  margin: 0 auto;
+  max-width: 100%; 
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .desktopImage {
+    display: none;
+  }
+  .mobileImage {
+    display: block;
+  }
+}
+
+.imageLink {
+  display: inline-block;
+  margin: 10px;
+  text-decoration: none;
+  color: #0070f3;
+}
+
+.imageCard {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.imageLink:hover {
+  text-decoration: underline;
+} 
+
+.backButton {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: #0070f3;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+}

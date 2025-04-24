@@ -1,0 +1,14 @@
+/* styles/DashboardHeader.module.css */
+.header {
+    margin-bottom: 30px;
+  }
+  
+  .header h1 {
+    margin: 0 0 10px 0;
+    font-size: 2rem;
+  }
+  
+  .subtitle {
+    color: #666;
+    margin: 0;
+  }

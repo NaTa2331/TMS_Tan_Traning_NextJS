@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+ /* globals.css */
+:root {
+  --font-primary: var(--font-inter);
+  --font-secondary: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+body {
+  font-family: var(--font-primary);
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+h1, h2 {
+  font-family: var(--font-secondary);
+}
+code, pre {
+  font-family: var(--font-mono);
+}
+
+
+.app-container {
+  min-height: 100vh;
+  background: linear-gradient(to right, #fbc2eb, #a6c1ee);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* font-family: 'Segoe UI', sans-serif; */
+  /* font-family: var(--font-inter); */
+}

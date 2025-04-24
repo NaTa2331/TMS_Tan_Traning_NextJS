@@ -1,0 +1,71 @@
+/* styles/DashboardFooter.module.css */
+.footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    padding: 2rem 0;
+    margin-top: auto;
+  }
+  
+  .footerContent {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .footerLeft {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .copyright {
+    color: #6c757d;
+    font-size: 0.9rem;
+  }
+  
+  .version {
+    color: #adb5bd;
+    font-size: 0.8rem;
+  }
+  
+  .footerRight {
+    display: flex;
+    gap: 2rem;
+  }
+  
+  .footerNav {
+    display: flex;
+    gap: 1.5rem;
+  }
+  
+  .footerLink {
+    color: #6c757d;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+  }
+  
+  .footerLink:hover {
+    color: #0d6efd;
+  }
+  
+  @media (max-width: 768px) {
+    .footerContent {
+      flex-direction: column;
+      gap: 1.5rem;
+      text-align: center;
+    }
+    
+    .footerRight {
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .footerNav {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
