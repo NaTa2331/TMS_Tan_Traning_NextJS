@@ -18,8 +18,7 @@ model User {
   name      String
   email     String   @unique
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  items    ListItem[]
+  items     ListItem[]
 }
 
 model ListItem {
@@ -27,7 +26,6 @@ model ListItem {
   title       String
   description String
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
   userId      Int?
   user        User?    @relation(fields: [userId], references: [id])
 }

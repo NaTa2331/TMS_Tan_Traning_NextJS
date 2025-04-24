@@ -36,29 +36,34 @@ export default function ListItemPage() {
 
   const loadItems = async (page: number, search?: string) => {
     try {
-      const [itemsRes, usersRes] = await Promise.all([
-        fetch(`/api/listitem?page=${page}&limit=${itemsPerPage}${search ? `&search=${search}` : ''}`),
-        fetch('/api/users'),
-      ]);
+      // const [itemsRes, usersRes] = await Promise.all([
+      //   // fetch(`/api/listitem?page=${page}&limit=${itemsPerPage}${search ? `&search=${search}` : ''}`),
+      //   // fetch('/api/users'),
+      // ]);
+      const itemsRes = await fetch(`/api/listitem?page=${page}&limit=${itemsPerPage}${search ? `&search=${search}` : ''}`);
+
 
       if (!itemsRes.ok) {
         const errorData = await itemsRes.json();
         throw new Error(errorData.error || 'Failed to fetch items');
       }
 
-      if (!usersRes.ok) {
-        const errorData = await usersRes.json();
-        throw new Error(errorData.error || 'Failed to fetch users');
-      }
+      // if (!usersRes.ok) {
+      //   const errorData = await usersRes.json();
+      //   throw new Error(errorData.error || 'Failed to fetch users');
+      // }
 
-      const [itemsData, usersData] = await Promise.all([
-        itemsRes.json(),
-        usersRes.json(),
-      ]);
+      // const [itemsData, usersData] = await Promise.all([
+      //   itemsRes.json(),
+      //   usersRes.json(),
+      // ]);
+      const itemsData = await itemsRes.json();
+
 
       setItems(itemsData.items);
-      setUsers(usersData);
-      setTotalItems(Number(itemsRes.headers.get('X-Total-Count')));
+      // setUsers(usersData);
+      setTotalItems(Number(itemsRes.headers.get('X-Total-Count') || 0));
+      
 
       // Update URL
       const params = new URLSearchParams();
@@ -151,14 +156,14 @@ export default function ListItemPage() {
           <h3 className={styles.cardTitle}>{item.title}</h3>
           <p className={styles.cardDesc}>{item.description}</p>
 
-          <div className={styles.usersSection}>
+          {/* <div className={styles.usersSection}>
             <h3>User</h3>
             <ul>
               {users.map(user => (
                 <li key={user.id}>{user.name}</li>
               ))}
             </ul>
-          </div>
+          </div> */}
 
           {/* Thêm hai nút Edit và Delete ở đây */}
           <div className={styles.actionButtons}>

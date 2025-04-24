@@ -1,90 +1,52 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma'; // Đảm bảo import đúng
+import type { NextApiRequest, NextApiResponse } from 'next';
 
-const prisma = new PrismaClient();
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method === 'GET') {
+    const page = parseInt(req.query.page as string || '1');
+    const limit = parseInt(req.query.limit as string || '9');
+    const search = req.query.search as string || '';
 
-export async function GET(request: NextRequest) {
-  try {
-    const page = parseInt(request.nextUrl.searchParams.get('page') || '1');
-    const limit = parseInt(request.nextUrl.searchParams.get('limit') || '9');
-    const offset = (page - 1) * limit;
-    const search = request.nextUrl.searchParams.get('search') || '';
-
-    const [items, total] = await Promise.all([
-      prisma.listItem.findMany({
-        where: {
+    // Điều kiện tìm kiếm
+    const where = search
+      ? {
           OR: [
-            { title: { contains: search, mode: 'insensitive' } },
-            { description: { contains: search, mode: 'insensitive' } },
+            {
+              title: {
+                contains: search,
+                mode: 'insensitive' as const, // Tìm kiếm không phân biệt chữ hoa/thường
+              },
+            },
+            {
+              description: {
+                contains: search,
+                mode: 'insensitive' as const,
+              },
+            },
           ],
-        },
-        skip: offset,
-        take: limit,
-        orderBy: { id: 'desc' }
-      }),
-      prisma.listItem.count({
-        where: {
-          OR: [
-            { title: { contains: search, mode: 'insensitive' } },
-            { description: { contains: search, mode: 'insensitive' } },
-          ],
-        },
-      })
-    ]);
+        }
+      : {};
 
-    const response = NextResponse.json({
-      items: Array.isArray(items) ? items : [items],
-      total: total
-    });
-    response.headers.set('X-Total-Count', total.toString());
-    return response;
-  } catch (err) {
-    console.error('Error fetching items:', err);
-    return NextResponse.json(
-      { error: 'Failed to fetch data' },
-      { status: 500 }
-    );
-  }
-}
+    try {
+      // Lấy dữ liệu từ Prisma
+      const [items, total] = await Promise.all([
+        prisma.listItem.findMany({
+          where,
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: { id: 'desc' }, // Sắp xếp theo id giảm dần
+        }),
+        prisma.listItem.count({ where }), // Đếm tổng số lượng các item thỏa mãn điều kiện
+      ]);
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const newItem = await prisma.listItem.create({
-      data: {
-        title: body.title,
-        description: body.description
-      }
-    });
-    return NextResponse.json(newItem);
-  } catch (err) {
-    return NextResponse.json({ error: 'Failed to create item' }, { status: 500 });
-  }
-}
-
-export async function PUT(request: NextRequest) {
-  try {
-    const { id, title, description } = await request.json();
-
-    const updatedItem = await prisma.listItem.update({
-      where: { id },
-      data: { title, description }
-    });
-
-    return NextResponse.json(updatedItem);
-  } catch (err) {
-    return NextResponse.json({ error: 'Failed to update item' }, { status: 500 });
-  }
-}
-
-export async function DELETE(request: NextRequest) {
-  try {
-    const id = parseInt(new URL(request.url).searchParams.get('id') || '0');
-
-    await prisma.listItem.delete({ where: { id } });
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    return NextResponse.json({ error: 'Failed to delete item' }, { status: 500 });
+      // Thiết lập header để trả về tổng số lượng
+      res.setHeader('X-Total-Count', total.toString());
+      res.status(200).json({ items });
+    } catch (error) {
+      console.error('Error fetching items:', error);
+      res.status(500).json({ error: 'Failed to fetch items' });
+    }
+  } else {
+    res.status(405).json({ error: 'Method not allowed' });
   }
 }
