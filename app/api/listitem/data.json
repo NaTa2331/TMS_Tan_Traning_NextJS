@@ -1,4 +1,5 @@
-[
+{
+  "items": [
     {
       "id": 1,
       "title": "Sample Item 1",
@@ -23,7 +24,8 @@
       "id": 5,
       "title": "Sample Item 5",
       "description": "Yet another sample item."
-    },{
+    },
+    {
       "id": 6,
       "title": "Sample Item 6",
       "description": "Yet another sample item."
@@ -58,4 +60,5 @@
       "title": "Sample Item 12",
       "description": "Yet another sample item."
     }
-]
+  ]
+}
