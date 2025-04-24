@@ -4,7 +4,6 @@ const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
     optimizeCss: true,
-    optimizeFonts: true,
   },
   images: {
     unoptimized: false,
