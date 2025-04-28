@@ -8,8 +8,8 @@ async function main() {
   // 1. Tạo user mẫu
   const user = await prisma.user.create({
     data: {
-      name: 'Admin User',
-      email: 'admin@example.com',
+      name: 'Admin User 2',
+      email: 'admin2@example.com',
     },
   });
 
@@ -17,12 +17,72 @@ async function main() {
   await prisma.listItem.createMany({
     data: [
       {
-        title: 'Sample Item 1',
+        title: 'Sample Item 15',
         description: 'This is a sample item description',
         userId: user.id,
       },
       {
-        title: 'Sample Item 2',
+        title: 'Sample Item 16',
+        description: 'Another longer sample item description.',
+        userId: user.id,
+      },
+      {
+        title: 'Sample Item 3',
+        description: 'This is a sample item description',
+        userId: user.id,
+      },
+      {
+        title: 'Sample Item 4',
+        description: 'Another longer sample item description.',
+        userId: user.id,
+      },
+      {
+        title: 'Sample Item 5',
+        description: 'This is a sample item description',
+        userId: user.id,
+      },
+      {
+        title: 'Sample Item 6',
+        description: 'Another longer sample item description.',
+        userId: user.id,
+      },
+      {
+        title: 'Sample Item 7',
+        description: 'This is a sample item description',
+        userId: user.id,
+      },
+      {
+        title: 'Sample Item 8',
+        description: 'Another longer sample item description.',
+        userId: user.id,
+      },
+      {
+        title: 'Sample Item 9',
+        description: 'This is a sample item description',
+        userId: user.id,
+      },
+      {
+        title: 'Sample Item 10',
+        description: 'Another longer sample item description.',
+        userId: user.id,
+      },
+      {
+        title: 'Sample Item 11',
+        description: 'This is a sample item description',
+        userId: user.id,
+      },
+      {
+        title: 'Sample Item 12',
+        description: 'Another longer sample item description.',
+        userId: user.id,
+      },
+      {
+        title: 'Sample Item 13',
+        description: 'This is a sample item description',
+        userId: user.id,
+      },
+      {
+        title: 'Sample Item 14',
         description: 'Another longer sample item description.',
         userId: user.id,
       },

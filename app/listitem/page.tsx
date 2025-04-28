@@ -27,6 +27,7 @@ export default function ListItemPage() {
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const itemsPerPage = 9;
   let debounceTimer: NodeJS.Timeout;
 
@@ -36,44 +37,47 @@ export default function ListItemPage() {
 
   const loadItems = async (page: number, search?: string) => {
     try {
+      setIsLoading(true);
+      const params = new URLSearchParams();
+      params.set('page', page.toString());
+      params.set('limit', itemsPerPage.toString());
+      if (search) params.set('search', search);
 
-      const itemsRes = await fetch(`/api/listitem?page=${page}&limit=${itemsPerPage}${search ? `&search=${search}` : ''}`);
-
-
+      const itemsRes = await fetch(`/api/listitem?${params.toString()}`);
 
       if (!itemsRes.ok) {
         const errorData = await itemsRes.json();
         throw new Error(errorData.error || 'Failed to fetch items');
       }
 
-      // if (!usersRes.ok) {
-      //   const errorData = await usersRes.json();
-      //   throw new Error(errorData.error || 'Failed to fetch users');
-      // }
-
-      // const [itemsData, usersData] = await Promise.all([
-      //   itemsRes.json(),
-      //   usersRes.json(),
-      // ]);
       const itemsData = await itemsRes.json();
-
-
       setItems(itemsData.items);
-      // setUsers(usersData);
       setTotalItems(Number(itemsRes.headers.get('X-Total-Count') || 0));
       
-
       // Update URL
-      const params = new URLSearchParams();
-      params.set('page', page.toString());
-      if (search) params.set('search', search);
       router.push(`?${params.toString()}`);
     } catch (error) {
       console.error('Error loading items:', error);
       setItems([]);
       setTotalItems(0);
       alert('Failed to load items. Please try again later.');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newSearchTerm = e.target.value;
+    
+    // Clear previous timer
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    // Set new timer
+    debounceTimer = setTimeout(() => {
+      loadItems(1, newSearchTerm);
+    }, 500);
   };
 
   const handleAddItem = async () => {
@@ -106,6 +110,14 @@ export default function ListItemPage() {
     loadItems(currentPage, searchTerm);
   }, [currentPage, searchTerm, router]);
 
+  useEffect(() => {
+    return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+    };
+  }, []);
+
   return (
     <div className={styles.container}>
       <div className={styles.searchSection}>
@@ -113,12 +125,10 @@ export default function ListItemPage() {
           type="text"
           placeholder="Search items..."
           value={searchTerm}
-          onChange={(e) => {
-            const newSearchTerm = e.target.value;
-            loadItems(1, newSearchTerm);
-          }}
+          onChange={handleSearchChange}
+          disabled={isLoading}
         />
-        <button onClick={() => loadItems(1, searchTerm)}>
+        <button onClick={() => loadItems(1, searchTerm)} disabled={isLoading}>
           <FaSearch />
         </button>
       </div>
@@ -145,48 +155,50 @@ export default function ListItemPage() {
       </div>
 
       <div className={`${styles.grid} ${items.length === 1 ? styles['single-item'] : ''}`}>
+        {isLoading ? (
+          <div className={styles.loading}>Loading...</div>
+        ) : (
+          items.map(item => (
+            <div key={item.id} className={styles.card}>
+              <div className={styles.iconWrapper}>
+                <FaBoxOpen className={styles.icon} />
+              </div>
+              <h3 className={styles.cardTitle}>{item.title}</h3>
+              <p className={styles.cardDesc}>{item.description}</p>
 
-      {items.map(item => (
-        <div key={item.id} className={styles.card}>
-          <div className={styles.iconWrapper}>
-            <FaBoxOpen className={styles.icon} />
-          </div>
-          <h3 className={styles.cardTitle}>{item.title}</h3>
-          <p className={styles.cardDesc}>{item.description}</p>
+              {/* <div className={styles.usersSection}>
+                <h3>User</h3>
+                <ul>
+                  {users.map(user => (
+                    <li key={user.id}>{user.name}</li>
+                  ))}
+                </ul>
+              </div> */}
 
-          {/* <div className={styles.usersSection}>
-            <h3>User</h3>
-            <ul>
-              {users.map(user => (
-                <li key={user.id}>{user.name}</li>
-              ))}
-            </ul>
-          </div> */}
+              {/* Thêm hai nút Edit và Delete ở đây */}
+              <div className={styles.actionButtons}>
+                <button
+                  onClick={() => setEditingItem(item)}
+                  className={styles.editBtn}
+                >
+                  Edit
+                </button>
 
-          {/* Thêm hai nút Edit và Delete ở đây */}
-          <div className={styles.actionButtons}>
-            <button
-              onClick={() => setEditingItem(item)}
-              className={styles.editBtn}
-            >
-              Edit
-            </button>
-
-            <button
-              onClick={async () => {
-                await fetch(`/api/listitem?id=${item.id}`, {
-                  method: 'DELETE',
-                });
-                loadItems(currentPage, searchTerm);
-              }}
-              className={styles.deleteBtn}
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      ))}
-
+                <button
+                  onClick={async () => {
+                    await fetch(`/api/listitem?id=${item.id}`, {
+                      method: 'DELETE',
+                    });
+                    loadItems(currentPage, searchTerm);
+                  }}
+                  className={styles.deleteBtn}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       <div className={styles.pagination}>
