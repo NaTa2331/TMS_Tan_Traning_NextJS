@@ -1,71 +1,77 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
-export async function GET(req: NextRequest) {
+// GET: Lấy danh sách items (có phân trang + search)
+export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '10');
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const limit = parseInt(searchParams.get('limit') || '9', 10);
   const search = searchParams.get('search') || '';
 
-  const whereClause = search
-    ? {
-        OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
-        ],
-      }
-    : {};
+  const skip = (page - 1) * limit;
 
-  const items = await prisma.listItem.findMany({
-    skip: (page - 1) * limit,
-    take: limit,
-  });
+  const [items, totalItems] = await Promise.all([
+    prisma.listItem.findMany({
+      where: {
+        title: {
+          contains: search,
+          mode: 'insensitive',
+        },
+      },
+      skip,
+      take: limit,
+      orderBy: { id: 'desc' },
+    }),
+    prisma.listItem.count({
+      where: {
+        title: {
+          contains: search,
+          mode: 'insensitive',
+        },
+      },
+    }),
+  ]);
 
-  const total = await prisma.listItem.count();
+  const response = NextResponse.json({ items });
+  response.headers.set('X-Total-Count', totalItems.toString());
 
-  return NextResponse.json({ items }, {
-    headers: {
-      'X-Total-Count': total.toString(),
+  return response;
+}
+
+// POST: Tạo mới 1 item
+export async function POST(req: Request) {
+  const body = await req.json();
+  const { title, description, userId } = body;
+
+  if (!title || !description || !userId) {
+    return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+  }
+
+  const newItem = await prisma.listItem.create({
+    data: {
+      title,
+      description,
+      userId,
     },
   });
+
+  return NextResponse.json(newItem);
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { title, description, userId } = body;
-
-    const newItem = await prisma.listItem.create({
-      data: {
-        title,
-        description,
-        userId,
-      },
-    });
-
-    return NextResponse.json(newItem, { status: 201 });
-  } catch (error) {
-    console.error('POST error:', error);
-    return NextResponse.json({ error: 'Failed to create item' }, { status: 500 });
-  }
-}
-
-
-export async function DELETE(req: NextRequest) {
+// DELETE: Xóa 1 item
+export async function DELETE(req: Request) {
   const { searchParams } = new URL(req.url);
-  const id = parseInt(searchParams.get('id') || '');
+  const id = searchParams.get('id');
 
   if (!id) {
-    return NextResponse.json({ error: 'Missing item id' }, { status: 400 });
+    return NextResponse.json({ error: 'Missing id' }, { status: 400 });
   }
 
-  try {
-    await prisma.listItem.delete({ where: { id } });
-    return NextResponse.json({ message: 'Deleted successfully' });
-  } catch (error) {
-    console.error('DELETE error:', error);
-    return NextResponse.json({ error: 'Failed to delete item' }, { status: 500 });
-  }
+  await prisma.listItem.delete({
+    where: { id: Number(id) },
+  });
+
+  return NextResponse.json({ message: 'Item deleted' });
 }

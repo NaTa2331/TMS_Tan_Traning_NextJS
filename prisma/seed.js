@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🔄 Seeding database...');
 
-  // 1. Tạo user mẫu
+  // 1. Seed user
   const user = await prisma.user.create({
     data: {
       name: 'Admin User 2',
@@ -13,7 +13,7 @@ async function main() {
     },
   });
 
-  // 2. Tạo các list item gắn với user
+  // 2. Seed items
   await prisma.listItem.createMany({
     data: [
       {
