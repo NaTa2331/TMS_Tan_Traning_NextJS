@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import LoadingPage from './loading';
 
 import styles from '@/styles/ListItem.module.css';
 import { FaBoxOpen, FaSearch } from 'react-icons/fa';
@@ -42,25 +43,33 @@ export default function ListItemPage() {
       params.set('page', page.toString());
       params.set('limit', itemsPerPage.toString());
       if (search) params.set('search', search);
-
-      const itemsRes = await fetch(`/api/listitem?${params.toString()}`);
-
-      if (!itemsRes.ok) {
-        const errorData = await itemsRes.json();
-        throw new Error(errorData.error || 'Failed to fetch items');
+  
+      // Parallel fetching
+      const [itemsRes, usersRes] = await Promise.all([
+        fetch(`/api/listitem?${params.toString()}`),
+        fetch(`/api/users`)
+      ]);
+  
+      if (!itemsRes.ok || !usersRes.ok) {
+        throw new Error('Failed to fetch data');
       }
-
+  
       const itemsData = await itemsRes.json();
+      const usersData = await usersRes.json();
+  
       setItems(itemsData.items);
+      setUsers(usersData.users);
       setTotalItems(Number(itemsRes.headers.get('X-Total-Count') || 0));
-      
+  
       // Update URL
       router.push(`?${params.toString()}`);
+
     } catch (error) {
-      console.error('Error loading items:', error);
+      console.error('Error loading items and users:', error);
       setItems([]);
+      setUsers([]);
       setTotalItems(0);
-      alert('Failed to load items. Please try again later.');
+      alert('Failed to load data. Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -120,104 +129,101 @@ export default function ListItemPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.searchSection}>
-        <input
-          type="text"
-          placeholder="Search items..."
-          value={searchTerm}
-          onChange={handleSearchChange}
-          disabled={isLoading}
-        />
-        <button onClick={() => loadItems(1, searchTerm)} disabled={isLoading}>
-          <FaSearch />
-        </button>
-      </div>
+      {/* Render loading page if data is being fetched */}
+      {isLoading ? (
+        <LoadingPage />
+      ) : (
+        <>
+          <div className={styles.searchSection}>
+            <input
+              type="text"
+              placeholder="Search items..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              disabled={isLoading}
+            />
+            <button onClick={() => loadItems(1, searchTerm)} disabled={isLoading}>
+              <FaSearch />
+            </button>
+          </div>
 
-      <h1 className={styles.heading}>📦 List of Items</h1>
-      <div className={styles.formSection}>
-        <input
-          type="text"
-          placeholder="Title"
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Description"
-          value={newDesc}
-          onChange={(e) => setNewDesc(e.target.value)}
-        />
-        <button
-          onClick={handleAddItem}
-        >
-          Add Item
-        </button>
-      </div>
+          <h1 className={styles.heading}>📦 List of Items</h1>
+          <div className={styles.formSection}>
+            <input
+              type="text"
+              placeholder="Title"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+            />
+            <input
+              type="text"
+              placeholder="Description"
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
+            />
+            <button
+              onClick={handleAddItem}
+            >
+              Add Item
+            </button>
+          </div>
 
-      <div className={`${styles.grid} ${items.length === 1 ? styles['single-item'] : ''}`}>
-        {isLoading ? (
-          <div className={styles.loading}>Loading...</div>
-        ) : (
-          items.map(item => (
-            <div key={item.id} className={styles.card}>
-              <div className={styles.iconWrapper}>
-                <FaBoxOpen className={styles.icon} />
+          <div className={`${styles.grid} ${items.length === 1 ? styles['single-item'] : ''}`}>
+            {items.map(item => (
+              <div key={item.id} className={styles.card}>
+                <div className={styles.iconWrapper}>
+                  <FaBoxOpen className={styles.icon} />
+                </div>
+                <h3 className={styles.cardTitle}>{item.title}</h3>
+                <p className={styles.cardDesc}>{item.description}</p>
+
+                <p className={styles.cardUser}>
+                  👤 Creator: {users.find(user => user.id === item.userId)?.name || 'Unknown User'}
+                </p>
+
+                <div className={styles.actionButtons}>
+                  <button
+                    onClick={() => setEditingItem(item)}
+                    className={styles.editBtn}
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      await fetch(`/api/listitem?id=${item.id}`, {
+                        method: 'DELETE',
+                      });
+                      loadItems(currentPage, searchTerm);
+                    }}
+                    className={styles.deleteBtn}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-              <h3 className={styles.cardTitle}>{item.title}</h3>
-              <p className={styles.cardDesc}>{item.description}</p>
+            ))}
+          </div>
 
-              {/* <div className={styles.usersSection}>
-                <h3>User</h3>
-                <ul>
-                  {users.map(user => (
-                    <li key={user.id}>{user.name}</li>
-                  ))}
-                </ul>
-              </div> */}
-
-              {/* Thêm hai nút Edit và Delete ở đây */}
-              <div className={styles.actionButtons}>
-                <button
-                  onClick={() => setEditingItem(item)}
-                  className={styles.editBtn}
-                >
-                  Edit
-                </button>
-
-                <button
-                  onClick={async () => {
-                    await fetch(`/api/listitem?id=${item.id}`, {
-                      method: 'DELETE',
-                    });
-                    loadItems(currentPage, searchTerm);
-                  }}
-                  className={styles.deleteBtn}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      <div className={styles.pagination}>
-        <button
-          onClick={() => loadItems(Math.max(1, currentPage - 1), searchTerm)}
-          disabled={currentPage === 1}
-        >
-          Previous
-        </button>
-        <span>
-          Page {currentPage} of {totalPages}
-        </span>
-        <button
-          onClick={() => loadItems(Math.min(totalPages, currentPage + 1), searchTerm)}
-          disabled={currentPage === totalPages}
-        >
-          Next
-        </button>
-      </div>
+          <div className={styles.pagination}>
+            <button
+              onClick={() => loadItems(Math.max(1, currentPage - 1), searchTerm)}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => loadItems(Math.min(totalPages, currentPage + 1), searchTerm)}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

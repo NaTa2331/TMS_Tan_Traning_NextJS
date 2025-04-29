@@ -3,15 +3,13 @@ import { NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
-// GET: Lấy danh sách items (có phân trang + search)
+// GET: get List items (inclue search and pagination)
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = parseInt(searchParams.get('limit') || '9', 10);
   const search = searchParams.get('search') || '';
-
   const skip = (page - 1) * limit;
-
   const [items, totalItems] = await Promise.all([
     prisma.listItem.findMany({
       where: {
@@ -22,7 +20,7 @@ export async function GET(req: Request) {
       },
       skip,
       take: limit,
-      orderBy: { id: 'desc' },
+      orderBy: { id: 'asc' },
     }),
     prisma.listItem.count({
       where: {
