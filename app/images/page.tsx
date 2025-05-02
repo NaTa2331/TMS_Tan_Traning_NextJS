@@ -1,5 +1,4 @@
 // app/images/page.tsx
-import BackButton from '@/components/BackButton';
 import styles from '@/styles/NextScreen.module.css';
 import Link from 'next/link';
 

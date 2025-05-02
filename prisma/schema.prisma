@@ -21,6 +21,15 @@ model user {
   items     listItem[]
 }
 
+model user_account {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  hashedPassword String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
 model listItem {
   id          Int      @id @default(autoincrement())
   title       String

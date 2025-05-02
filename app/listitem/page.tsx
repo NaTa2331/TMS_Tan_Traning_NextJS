@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import LoadingPage from './loading';
 import styles from '@/styles/ListItem.module.css';
@@ -36,9 +36,7 @@ export default function ListItemPage() {
   const [newDesc, setNewDesc] = useState('');
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const itemsPerPage = 9;
-  let debounceTimer: NodeJS.Timeout;
 
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const currentPage = parseInt(searchParams.get('page') || '1');
@@ -46,15 +44,13 @@ export default function ListItemPage() {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   const handleApiError = (error: string) => {
-    setError(error);
     toast.error(error);
     setIsLoading(false);
   };
 
-  const loadItems = async (page: number, search?: string) => {
+  const loadItems = useCallback(async (page: number, search?: string) => {
     try {
       setIsLoading(true);
-      setError(null);
       const params = new URLSearchParams();
       params.set('page', page.toString());
       params.set('limit', itemsPerPage.toString());
@@ -89,13 +85,12 @@ export default function ListItemPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [itemsPerPage, router]);
 
   const handleCreateItem = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setIsLoading(true);
-      setError(null);
       
       if (!newTitle.trim() || !newDesc.trim()) {
         throw new Error('Title and description are required');
@@ -129,7 +124,6 @@ export default function ListItemPage() {
   const handleUpdateItem = async (item: Item) => {
     try {
       setIsLoading(true);
-      setError(null);
 
       if (!item.title.trim() || !item.description.trim()) {
         throw new Error('Title and description are required');
@@ -158,7 +152,6 @@ export default function ListItemPage() {
   const handleDeleteItem = async (id: number) => {
     try {
       setIsLoading(true);
-      setError(null);
 
       const response = await fetch(`/api/listitem?id=${id}`, {
         method: 'DELETE',
@@ -184,7 +177,7 @@ export default function ListItemPage() {
   useEffect(() => {
     loadItems(currentPage);
     setLocalSearchTerm(searchTerm);
-  }, [currentPage]);
+  }, [currentPage, loadItems, searchTerm]);
 
   return (
     <div className={styles.container}>

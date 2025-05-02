@@ -13,9 +13,9 @@ export default function SearchInput() {
     const timeout = setTimeout(() => {
       router.push(`/listitem?searchTerm=${input}&page=1`);
     }, 500);
-
+  
     return () => clearTimeout(timeout);
-  }, [input]);
+  }, [input, router]);
 
   return (
     <input

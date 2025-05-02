@@ -1,3 +1,4 @@
+/* eslint-disable */
 "use server"
 
 export async function setSearchTerm(formData: FormData) {

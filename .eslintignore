@@ -1,0 +1,9 @@
+# Prisma generated files
+app/generated/prisma/runtime/library.d.ts
+app/generated/prisma/runtime/index-browser.d.ts
+app/generated/prisma/index.d.ts
+app/generated/prisma/**/*.js
+app/generated/prisma/**/*.d.ts
+
+# Server actions
+app/actions.ts

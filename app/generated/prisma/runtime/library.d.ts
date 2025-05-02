@@ -1,6 +1,7 @@
 /**
  * @param this
  */
+/* eslint-disable */
 declare function $extends(this: Client, extension: ExtensionArgs | ((client: Client) => Client)): Client;
 
 declare type AccelerateEngineConfig = {
@@ -2706,7 +2707,7 @@ declare type QueryEngineProtocol = 'graphql' | 'json';
 
 declare type QueryEngineRequest = {
     query: string;
-    variables: Object;
+    variables: object;
 };
 
 declare type QueryEngineResultData<T> = {

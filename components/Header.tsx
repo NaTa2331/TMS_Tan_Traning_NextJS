@@ -36,9 +36,15 @@ export default function Header() {
           </Link>
           <Link 
             href="/listitem" 
-            className={`${styles.navLink} ${isActive('/images') ? styles.active : ''}`}
+            className={`${styles.navLink} ${isActive('/listitem') ? styles.active : ''}`}
           >
             Items
+          </Link>
+          <Link 
+            href="/login" 
+            className={`${styles.navLink} ${isActive('/login') ? styles.active : ''}`}
+          >
+            Login
           </Link>
         </div>
       </nav>
