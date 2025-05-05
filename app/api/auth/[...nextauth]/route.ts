@@ -42,7 +42,7 @@ const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name
         };
-      }
+      },
     }),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -64,45 +64,27 @@ const authOptions: NextAuthOptions = {
         }
       }
     })
-    // GitHubProvider({
-    //   clientId: process.env.GITHUB_ID!,
-    //   clientSecret: process.env.GITHUB_SECRET!,
-    // }),
-    // FacebookProvider({
-    //   clientId: process.env.FACEBOOK_CLIENT_ID!,
-    //   clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
-    // }),
-    // AppleProvider({
-    //   clientId: process.env.APPLE_CLIENT_ID!,
-    //   clientSecret: process.env.APPLE_CLIENT_SECRET!,
-    // }),
-        
   ],
   pages: {
     signIn: "/login"
   },
   callbacks: {
-    async signIn({ user, account }: { user: User | null, account: Account | null }) {
-      // Allow access to the registration page
-      if (typeof window !== 'undefined' && window.location.pathname === '/register') {
-        return true;
-      }
-      
-      // Keep the existing logic for other routes
+    async signIn({ user, account }) {
       if (!user || !account) {
         return false;
       }
       return true;
     },
+    
     async redirect({ url, baseUrl }) {
-      // Allow access to the registration page
-      if (url.startsWith(baseUrl + '/register')) {
-        return url;
+      try {
+        const targetUrl = new URL(url, baseUrl);
+        return targetUrl.toString();
+      } catch (err) {
+        return baseUrl;
       }
-      
-      // Keep the existing logic for other routes
-      return url;
     }
+    
   },
   session: {
     strategy: "jwt"

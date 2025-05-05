@@ -21,8 +21,10 @@ export default function LoginForm() {
 
     if (result?.error) {
       setError(result.error);
-    } else {
+    } else if (result?.ok) {
       router.push('/');
+    } else {
+      setError('Đã xảy ra lỗi khi đăng nhập');
     }
   };
 
