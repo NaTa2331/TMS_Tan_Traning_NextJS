@@ -4,8 +4,10 @@ import GoogleProvider from "next-auth/providers/google";
 import GitHubProvider from "next-auth/providers/github";
 import { prisma } from "@/lib/prisma";
 import { compare } from "bcryptjs";
+import type { NextAuthOptions } from "next-auth";
+import type { User } from "next-auth";
 
-const authOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -61,13 +63,25 @@ const authOptions = {
         }
       }
     })
+    // GitHubProvider({
+    //   clientId: process.env.GITHUB_ID!,
+    //   clientSecret: process.env.GITHUB_SECRET!,
+    // }),
+    // FacebookProvider({
+    //   clientId: process.env.FACEBOOK_CLIENT_ID!,
+    //   clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
+    // }),
+    // AppleProvider({
+    //   clientId: process.env.APPLE_CLIENT_ID!,
+    //   clientSecret: process.env.APPLE_CLIENT_SECRET!,
+    // }),
         
   ],
   pages: {
     signIn: "/login"
   },
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user, account }: { user: User | null, account: any }) {
       // Allow access to the registration page
       if (typeof window !== 'undefined' && window.location.pathname === '/register') {
         return true;
