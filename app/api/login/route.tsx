@@ -91,7 +91,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
-export default function Page() {
-  return <LoginForm />;
-}
