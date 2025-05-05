@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { compare } from 'bcryptjs';
+import { prisma } from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
 import LoginForm from '@/components/LoginForm';
 
 const loginSchema = z.object({
@@ -12,26 +15,78 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, password } = loginSchema.parse(body);
 
-    // Validation thành công, nhưng vì chưa có database
-    // nên chúng ta sẽ trả về lỗi demo
+    console.log('Email from request:', email);
+
+    // Kiểm tra email tồn tại
+    const user = await prisma.user_account.findUnique({
+      where: { email },
+    });
+
+    console.log('User found:', user);
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Email không tồn tại'
+        },
+        { status: 401 }
+      );
+    }
+
+    // So sánh mật khẩu đã hash
+    const isValidPassword = await compare(password, user.hashedPassword);
+    if (!isValidPassword) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Mật khẩu không chính xác'
+        },
+        { status: 401 }
+      );
+    }
+
+    // Tạo token
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('JWT_SECRET is not configured');
+    }
+
+    const token = jwt.sign(
+      { userId: user.id },
+      secret,
+      { expiresIn: '1h' }
+    );
+
     return NextResponse.json(
       {
-        success: false,
-        message: 'Tài khoản hoặc mật khẩu không chính xác'
+        success: true,
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name
+        }
       },
-      { status: 401 }
+      { status: 200 }
     );
+
   } catch (error) {
+    console.error('Login error:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false,
-          message: 'Đã xảy ra lỗi'
+        {
+          success: false,
+          message: error.errors[0].message
         },
         { status: 400 }
       );
     }
     return NextResponse.json(
-      { success: false, message: 'Đã xảy ra lỗi' },
+      {
+        success: false,
+        message: 'Đã xảy ra lỗi khi đăng nhập'
+      },
       { status: 500 }
     );
   }

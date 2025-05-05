@@ -1,13 +1,13 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import GoogleProvider from "next-auth/providers/google";
+import GitHubProvider from "next-auth/providers/github";
+import FacebookProvider from "next-auth/providers/facebook";
+import AppleProvider from "next-auth/providers/apple";
+import { prisma } from "@/lib/prisma";
+import { compare } from "bcryptjs";
 
-const prisma = new PrismaClient();
-
-export const authOptions = {
-  adapter: PrismaAdapter(prisma),
+const authOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -30,25 +30,78 @@ export const authOptions = {
           throw new Error("Invalid credentials");
         }
 
-        const isCorrectPassword = await bcrypt.compare(
-          credentials.password,
-          user.hashedPassword
-        );
+        const isPasswordValid = await compare(credentials.password, user.hashedPassword);
 
-        if (!isCorrectPassword) {
+        if (!isPasswordValid) {
           throw new Error("Invalid credentials");
         }
 
         return {
           id: user.id,
-          name: user.name,
-          email: user.email
+          email: user.email,
+          name: user.name
         };
       }
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
+    }),
+    GitHubProvider({
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          scope: "read:user"
+        }
+      }
     })
+    // GitHubProvider({
+    //   clientId: process.env.GITHUB_ID!,
+    //   clientSecret: process.env.GITHUB_SECRET!,
+    // }),
+    // FacebookProvider({
+    //   clientId: process.env.FACEBOOK_CLIENT_ID!,
+    //   clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
+    // }),
+    // AppleProvider({
+    //   clientId: process.env.APPLE_CLIENT_ID!,
+    //   clientSecret: process.env.APPLE_CLIENT_SECRET!,
+    // }),
+        
   ],
   pages: {
     signIn: "/login"
+  },
+  callbacks: {
+    async signIn({ user, account, profile, email, credentials }) {
+      // Allow access to the registration page
+      if (typeof window !== 'undefined' && window.location.pathname === '/register') {
+        return true;
+      }
+      
+      // Keep the existing logic for other routes
+      if (!user || !account) {
+        return false;
+      }
+      return true;
+    },
+    async redirect({ url, baseUrl }) {
+      // Allow access to the registration page
+      if (url.startsWith(baseUrl + '/register')) {
+        return url;
+      }
+      
+      // Keep the existing logic for other routes
+      return url;
+    }
   },
   session: {
     strategy: "jwt"
@@ -57,5 +110,4 @@ export const authOptions = {
 };
 
 const handler = NextAuth(authOptions);
-
 export { handler as GET, handler as POST };
