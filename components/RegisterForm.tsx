@@ -41,7 +41,7 @@ export default function RegisterForm() {
       }
 
       router.push('/login');
-    } catch (error) {
+    } catch {
       setError('Đã xảy ra lỗi khi đăng ký');
     }
   };

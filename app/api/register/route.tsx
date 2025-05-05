@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Tạo user mới
-    const user = await prisma.user_account.create({
+    const userData = await prisma.user_account.create({
       data: {
         name,
         email,
@@ -34,7 +34,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Đăng ký thành công'
+      message: 'Đăng ký thành công',
+      user: {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email
+      }
     });
   } catch (error) {
     console.error('Error in register route:', error);

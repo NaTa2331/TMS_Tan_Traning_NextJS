@@ -1,7 +1,7 @@
 // components/Header.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
@@ -10,11 +10,6 @@ import styles from '@/styles/Header.module.css';
 export default function Header() {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  useEffect(() => {
-    setIsInitialized(true);
-  }, []);
 
   const isActive = (path: string) => {
     return pathname === path;

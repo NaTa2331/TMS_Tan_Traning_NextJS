@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import RegisterForm from './RegisterForm';
 
 export default function LoginForm() {
   const [formData, setFormData] = useState({ email: '', password: '' });

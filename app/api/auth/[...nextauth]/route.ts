@@ -2,8 +2,6 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import GitHubProvider from "next-auth/providers/github";
-import FacebookProvider from "next-auth/providers/facebook";
-import AppleProvider from "next-auth/providers/apple";
 import { prisma } from "@/lib/prisma";
 import { compare } from "bcryptjs";
 
@@ -81,7 +79,7 @@ const authOptions = {
     signIn: "/login"
   },
   callbacks: {
-    async signIn({ user, account, profile, email, credentials }) {
+    async signIn({ user, account }) {
       // Allow access to the registration page
       if (typeof window !== 'undefined' && window.location.pathname === '/register') {
         return true;
