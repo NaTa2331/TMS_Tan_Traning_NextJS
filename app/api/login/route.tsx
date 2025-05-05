@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { compare } from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
-import LoginForm from '@/components/LoginForm';
 
 const loginSchema = z.object({
   email: z.string().email('Email không hợp lệ'),
