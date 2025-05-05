@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { compare } from "bcryptjs";
 import type { NextAuthOptions } from "next-auth";
 import type { User } from "next-auth";
+import type { Account } from "next-auth";
 
 const authOptions: NextAuthOptions = {
   providers: [
@@ -81,7 +82,7 @@ const authOptions: NextAuthOptions = {
     signIn: "/login"
   },
   callbacks: {
-    async signIn({ user, account }: { user: User | null, account: any }) {
+    async signIn({ user, account }: { user: User | null, account: Account | null }) {
       // Allow access to the registration page
       if (typeof window !== 'undefined' && window.location.pathname === '/register') {
         return true;
