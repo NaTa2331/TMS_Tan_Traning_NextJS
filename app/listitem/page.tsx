@@ -6,7 +6,7 @@ import LoadingPage from './loading';
 import styles from '@/styles/ListItem.module.css';
 import { FaBoxOpen, FaSearch } from 'react-icons/fa';
 import { toast } from 'react-hot-toast'; 
-
+import styleFilterButton from '@/styles/FilterButton.module.css';
 type Item = {
   id: number;
   title: string;
@@ -30,6 +30,7 @@ export default function ListItemPage() {
   const searchParams = useSearchParams();
   const currentPage = parseInt(searchParams.get('page') || '1');
   const searchTerm = searchParams.get('search') || '';
+  const filter = searchParams.get('filter') || 'mine'; // 'mine' or 'all'
   const itemsPerPage = 9;
 
   // Kiểm tra session một lần khi component mount
@@ -37,7 +38,7 @@ export default function ListItemPage() {
     if (!session?.user?.id) {
       router.push('/login');
     }
-  }, [session?.user?.id, router]); // Chỉ phụ thuộc vào session?.user?.id thay vì session
+  }, [session?.user?.id, router]);
 
   if (!session?.user?.id) {
     return null; // Trả về null thay vì Loading để tránh vòng lặp chuyển hướng
@@ -58,8 +59,13 @@ export default function ListItemPage() {
       params.set('page', page.toString());
       params.set('limit', itemsPerPage.toString());
       if (search) params.set('search', search);
-  
-      const response = await fetch(`/api/listitem?${params.toString()}`);
+      params.set('filter', filter);
+
+      const response = await fetch(`/api/listitem?${params.toString()}`, {
+        headers: {
+          'Authorization': 'Bearer ' + session.user.id
+        }
+      });
 
       if (!response.ok) {
         throw new Error('Failed to fetch data');
@@ -82,7 +88,7 @@ export default function ListItemPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [itemsPerPage, router]);
+  }, [itemsPerPage, router, filter, session.user.id]);
 
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
@@ -129,7 +135,7 @@ export default function ListItemPage() {
 
       const result = await response.json();
 
-      if (!response.ok) {
+      if (!result.success) {
         throw new Error(result.error || 'Failed to create item');
       }
 
@@ -154,7 +160,10 @@ export default function ListItemPage() {
 
       const response = await fetch('/api/listitem', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.user.id
+        },
         body: JSON.stringify(item),
       });
 
@@ -178,6 +187,9 @@ export default function ListItemPage() {
 
       const response = await fetch(`/api/listitem?id=${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': 'Bearer ' + session.user.id
+        }
       });
 
       const result: ApiResponse<null> = await response.json();
@@ -193,10 +205,19 @@ export default function ListItemPage() {
     }
   };
 
+  const handleFilterChange = (newFilter: 'mine' | 'all') => {
+    const params = new URLSearchParams();
+    params.set('page', '1');
+    params.set('search', localSearchTerm);
+    params.set('filter', newFilter);
+    router.push(`?${params.toString()}`);
+  };
+
   const handleSearch = () => {
     const params = new URLSearchParams();
     params.set('page', '1');
     params.set('search', localSearchTerm);
+    params.set('filter', filter);
     router.push(`?${params.toString()}`);
   };
 
@@ -211,6 +232,7 @@ export default function ListItemPage() {
         <LoadingPage />
       ) : (
         <>
+
           <div className={styles.searchContainer}>
             <input
               type="text"
@@ -224,7 +246,24 @@ export default function ListItemPage() {
             </button>
           </div>
 
-          <h1 className={styles.heading}>📦 List of Items</h1>
+          <h1 className={styles.heading}>
+            📦 List of Items
+            {filter === 'mine' && <span className={styles.filterTag}> (My Items)</span>}
+          </h1>
+          <div className={styleFilterButton.filterContainer}>
+            <button
+              onClick={() => handleFilterChange('mine')}
+              className={`${styleFilterButton.filterButton} ${filter === 'mine' ? styleFilterButton.active : ''}`}
+            >
+              My Items
+            </button>
+            <button
+              onClick={() => handleFilterChange('all')}
+              className={`${styleFilterButton.filterButton} ${filter === 'all' ? styleFilterButton.active : ''}`}
+            >
+              All Items
+            </button>
+          </div>
           <div className={styles.formSection}>
             <input style={{margin: '10px'}}
               type="text"

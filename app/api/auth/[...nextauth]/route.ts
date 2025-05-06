@@ -5,6 +5,7 @@ import GitHubProvider from "next-auth/providers/github";
 import { prisma } from "@/lib/prisma";
 import { compare } from "bcryptjs";
 import type { NextAuthOptions } from "next-auth";
+import image from "next/image";
 
 declare module "next-auth" {
   interface Session {
@@ -101,6 +102,7 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
+    maxAge: 1 * 24 * 60 * 60,
   },
   callbacks: {
     async jwt({ token, user, account }) {
@@ -112,7 +114,7 @@ export const authOptions: NextAuthOptions = {
         // Sử dụng ID GitHub làm email nếu không có email
         const email = account.provider === 'github' && !user?.email 
           ? `github_${account.providerAccountId}` 
-          : user?.email || token.email;
+          : user?.email || token.email || `github_${account.providerAccountId}`;
 
         console.log('Determined email:', email);
 
@@ -126,7 +128,7 @@ export const authOptions: NextAuthOptions = {
 
           if (existingUser) {
             // Nếu email đã tồn tại, tạo ID duy nhất cho GitHub
-            const githubId = `github_${user.id}`;
+            const githubId = `github_${account.providerAccountId}`;
             const existingGithubUser = await prisma.user_account.findUnique({
               where: { 
                 email: githubId 
@@ -138,7 +140,8 @@ export const authOptions: NextAuthOptions = {
                 data: {
                   name: user?.name || token.name || 'User',
                   email: githubId,
-                  hashedPassword: null
+                  hashedPassword: null,
+                  image: user?.image || token.image || null
                 }
               });
               token.id = newUser.id;
@@ -166,7 +169,8 @@ export const authOptions: NextAuthOptions = {
             data: {
               name: user?.name || token.name || 'User',
               email: email,
-              hashedPassword: null
+              hashedPassword: null,
+              image: user?.image || token.image || null
             }
           });
           console.log('New user created:', newUser);

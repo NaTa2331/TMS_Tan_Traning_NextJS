@@ -18,6 +18,7 @@ model user_account {
   name           String?
   email          String      @unique
   hashedPassword String?
+  image          String?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   items          listItem[]

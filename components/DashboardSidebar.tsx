@@ -11,7 +11,7 @@ export default function DashboardSidebar() {
         <Link href="/dashboard" className={styles.navItem}>
           <span>📊</span> Overview
         </Link>
-        <Link href="/dashboard/users" className={styles.navItem}>
+        <Link href="/dashboard/user" className={styles.navItem}>
           <span>👥</span> Users
         </Link>
         <Link href="/dashboard/activities" className={styles.navItem}>

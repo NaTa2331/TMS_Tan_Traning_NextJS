@@ -16,39 +16,30 @@ export default function Header() {
   };
 
   const handleLogout = () => {
-    // Thu hồi quyền và session
     signOut({ 
       redirect: true, 
       callbackUrl: '/login'
     })
     .then(() => {
-      // Xóa thông tin người dùng từ localStorage
       localStorage.removeItem('user');
       localStorage.removeItem('token');
       
-      // Xóa thông tin từ sessionStorage
       sessionStorage.removeItem('user');
       sessionStorage.removeItem('token');
       
-      // Chuyển hướng đến trang login
       window.location.href = '/login';
     })
     .catch((error) => {
       console.error('Logout error:', error);
-      // Nếu có lỗi, vẫn chuyển hướng đến login
       window.location.href = '/login';
     });
   };
 
-  // Kiểm tra xem người dùng có quyền truy cập vào trang hiện tại không
   const checkAccess = () => {
-    // If not logged in and trying to access protected pages
     if (!session && pathname !== '/login' && pathname !== '/register' && pathname !== '/') {
       window.location.href = '/login';
     }
   };
-
-  // Kiểm tra quyền truy cập khi component được mount
   useEffect(() => {
     checkAccess();
   }, [pathname, session]);
@@ -82,6 +73,12 @@ export default function Header() {
                 className={`${styles.navLink} ${isActive('/listitem') ? styles.active : ''}`}
               >
                 Items
+              </Link>
+              <Link 
+                href="/profile" 
+                className={`${styles.navLink} ${isActive('/profile') ? styles.active : ''}`}
+              >
+                Profile
               </Link>
               <button 
                 onClick={handleLogout}

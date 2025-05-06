@@ -8,25 +8,37 @@ const prisma = new PrismaClient();
 // GET: list items with search + pagination
 export async function GET(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Authentication required', success: false },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '9', 10);
     const search = searchParams.get('search') || '';
     const skip = (page - 1) * limit;
+    const filter = searchParams.get('filter') || 'mine'; // 'mine' or 'all'
 
     const [items, totalItems] = await Promise.all([
       prisma.listItem.findMany({
         where: {
           title: { contains: search, mode: 'insensitive' },
+          ...(filter === 'mine' && { userId: session.user.id }) // Sử dụng userId từ session
         },
         skip,
         take: limit,
         orderBy: { id: 'asc' },
-        include: { user: true }, // để lấy cả tên người tạo
+        include: { user: true },
       }),
       prisma.listItem.count({
         where: {
           title: { contains: search, mode: 'insensitive' },
+          ...(filter === 'mine' && { userId: session.user.id }) // Sử dụng userId từ session
         },
       }),
     ]);
