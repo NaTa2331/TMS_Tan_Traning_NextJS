@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import LoadingPage from './loading';
 import styles from '@/styles/ListItem.module.css';
 import { FaBoxOpen, FaSearch } from 'react-icons/fa';
@@ -10,12 +11,10 @@ type Item = {
   id: number;
   title: string;
   description: string;
-  userId: number;
-};
-
-type User = {
-  id: number;
-  name: string;
+  user: {
+    id: number;
+    name: string;
+  };
 };
 
 type ApiResponse<T> = {
@@ -26,11 +25,21 @@ type ApiResponse<T> = {
 };
 
 export default function ListItemPage() {
+  const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  useEffect(() => {
+    if (!session?.user?.id) {
+      router.push('/login');
+    }
+  }, [session, router]);
+
+  if (!session?.user?.id) {
+    return <div>Loading...</div>;
+  }
+
   const [items, setItems] = useState<Item[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
   const [totalItems, setTotalItems] = useState<number>(0);
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
@@ -56,26 +65,20 @@ export default function ListItemPage() {
       params.set('limit', itemsPerPage.toString());
       if (search) params.set('search', search);
   
-      // Parallel fetching with error handling
-      const [itemsRes, usersRes] = await Promise.all([
-        fetch(`/api/listitem?${params.toString()}`),
-        fetch(`/api/users`)
-      ]);
+      const response = await fetch(`/api/listitem?${params.toString()}`);
 
-      if (!itemsRes.ok || !usersRes.ok) {
+      if (!response.ok) {
         throw new Error('Failed to fetch data');
       }
 
-      const itemsData: ApiResponse<Item[]> = await itemsRes.json();
-      const usersData: ApiResponse<User[]> = await usersRes.json();
+      const data: ApiResponse<Item[]> = await response.json();
 
-      if (!itemsData.success || !usersData.success) {
-        throw new Error(itemsData.error || usersData.error || 'Failed to fetch data');
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch data');
       }
 
-      setItems(itemsData.data || []);
-      setUsers(usersData.data || []);
-      const total = itemsRes.headers.get('X-Total-Count');
+      setItems(data.data || []);
+      const total = response.headers.get('X-Total-Count');
       setTotalItems(total ? parseInt(total) : 0);
 
       // Update URL
@@ -96,19 +99,25 @@ export default function ListItemPage() {
         throw new Error('Title and description are required');
       }
 
+      if (!session?.user?.id) {
+        throw new Error('Authentication required');
+      }
+
       const response = await fetch('/api/listitem', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.user.id
+        },
         body: JSON.stringify({
           title: newTitle,
-          description: newDesc,
-          userId: users[0]?.id // Assuming first user as default
+          description: newDesc
         }),
       });
 
-      const result: ApiResponse<Item> = await response.json();
+      const result = await response.json();
 
-      if (!result.success) {
+      if (!response.ok) {
         throw new Error(result.error || 'Failed to create item');
       }
 
@@ -118,6 +127,8 @@ export default function ListItemPage() {
       toast.success('Item created successfully');
     } catch (err) {
       handleApiError(err instanceof Error ? err.message : 'Failed to create item');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -248,7 +259,7 @@ export default function ListItemPage() {
                     <h3 className={styles.cardTitle}>{item.title}</h3>
                     <p className={styles.cardDesc}>{item.description}</p>
                     <p className={styles.cardUser}>
-                      👤 Creator: {users.find(user => user.id === item.userId)?.name || 'Unknown User'}
+                      👤 Creator: {item.user?.name || 'Unknown User'}
                     </p>
                     <div className={styles.actionButtons}>
                       <div>

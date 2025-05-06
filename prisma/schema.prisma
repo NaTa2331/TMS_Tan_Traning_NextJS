@@ -13,28 +13,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model user {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  createdAt DateTime @default(now())
-  items     listItem[]
-}
-
 model user_account {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  hashedPassword String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id             String      @id @default(cuid())
+  name           String?
+  email          String      @unique
+  hashedPassword String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  items          listItem[]
 }
 
 model listItem {
-  id          Int      @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   title       String
   description String
-  createdAt   DateTime @default(now())
-  userId      Int?
-  user        user?    @relation(fields: [userId], references: [id])
+  createdAt   DateTime      @default(now())
+  userId      String?
+  user        user_account? @relation(fields: [userId], references: [id])
 }
+
