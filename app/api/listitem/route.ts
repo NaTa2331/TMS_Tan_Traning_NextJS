@@ -2,7 +2,6 @@ import { PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { headers } from 'next/headers';
 
 const prisma = new PrismaClient();
 
@@ -91,11 +90,26 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'Missing id', success: false }, { status: 400 });
     }
 
-    const itemExists = await prisma.listItem.findUnique({ where: { id: Number(id) } });
-    if (!itemExists) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized', success: false }, { status: 401 });
+    }
+
+    const item = await prisma.listItem.findUnique({ 
+      where: { id: Number(id) },
+      include: { user: true }
+    });
+
+    if (!item) {
       return NextResponse.json({ error: 'Item not found', success: false }, { status: 404 });
     }
 
+    // Check authentication
+    if (item.userId !== session.user.id) {
+      return NextResponse.json({ error: 'You do not have permission to delete this item', success: false }, { status: 403 });
+    }
+
+    // Delete item
     await prisma.listItem.delete({ where: { id: Number(id) } });
     return NextResponse.json({ message: 'Item deleted', success: true });
   } catch (error) {

@@ -28,15 +28,19 @@ export default function ListItemPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const currentPage = parseInt(searchParams.get('page') || '1');
+  const searchTerm = searchParams.get('search') || '';
+  const itemsPerPage = 9;
 
+  // Kiểm tra session một lần khi component mount
   useEffect(() => {
     if (!session?.user?.id) {
       router.push('/login');
     }
-  }, [session, router]);
+  }, [session?.user?.id, router]); // Chỉ phụ thuộc vào session?.user?.id thay vì session
 
   if (!session?.user?.id) {
-    return <div>Loading...</div>;
+    return null; // Trả về null thay vì Loading để tránh vòng lặp chuyển hướng
   }
 
   const [items, setItems] = useState<Item[]>([]);
@@ -45,17 +49,7 @@ export default function ListItemPage() {
   const [newDesc, setNewDesc] = useState('');
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const itemsPerPage = 9;
-
-  const [localSearchTerm, setLocalSearchTerm] = useState('');
-  const currentPage = parseInt(searchParams.get('page') || '1');
-  const searchTerm = searchParams.get('search') || '';
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-
-  const handleApiError = (error: string) => {
-    toast.error(error);
-    setIsLoading(false);
-  };
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
 
   const loadItems = useCallback(async (page: number, search?: string) => {
     try {
@@ -81,14 +75,32 @@ export default function ListItemPage() {
       const total = response.headers.get('X-Total-Count');
       setTotalItems(total ? parseInt(total) : 0);
 
-      // Update URL
-      router.push(`?${params.toString()}`);
+      // Update URL without reloading
+      router.replace(`?${params.toString()}`);
     } catch (err) {
       handleApiError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsLoading(false);
     }
   }, [itemsPerPage, router]);
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  // Load items khi component mount và khi các tham số thay đổi
+  useEffect(() => {
+    loadItems(currentPage, searchTerm);
+  }, [currentPage, searchTerm, loadItems]); // Loại bỏ session và router khỏi dependencies
+
+  useEffect(() => {
+    if (searchTerm !== localSearchTerm) {
+      setLocalSearchTerm(searchTerm);
+    }
+  }, [searchTerm]);
+
+  const handleApiError = (error: string) => {
+    toast.error(error);
+    setIsLoading(false);
+  };
 
   const handleCreateItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,14 +193,16 @@ export default function ListItemPage() {
     }
   };
 
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    params.set('page', '1');
+    params.set('search', localSearchTerm);
+    router.push(`?${params.toString()}`);
+  };
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalSearchTerm(e.target.value);
   };
-
-  useEffect(() => {
-    loadItems(currentPage);
-    setLocalSearchTerm(searchTerm);
-  }, [currentPage, loadItems, searchTerm]);
 
   return (
     <div className={styles.container}>
@@ -197,7 +211,7 @@ export default function ListItemPage() {
         <LoadingPage />
       ) : (
         <>
-          <div className={styles.searchSection}>
+          <div className={styles.searchContainer}>
             <input
               type="text"
               placeholder="Search items..."
@@ -205,7 +219,7 @@ export default function ListItemPage() {
               onChange={handleSearchChange}
               disabled={isLoading}
             />
-            <button onClick={() => loadItems(1, localSearchTerm)} disabled={isLoading}>
+            <button onClick={handleSearch} disabled={isLoading}>
               <FaSearch />
             </button>
           </div>

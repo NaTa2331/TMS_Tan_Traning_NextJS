@@ -50,9 +50,7 @@ export default function LoginForm() {
         Đăng nhập
       </h2>
       <form onSubmit={handleSubmit}>
-        {error && (
-          <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>
-        )}
+        
         <div style={{ marginBottom: '1.5rem' }}>
           <label htmlFor="email" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
             Email:
@@ -95,7 +93,9 @@ export default function LoginForm() {
             }}
           />
         </div>
-
+        {error && (
+          <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>
+        )}
         <p style={{ textAlign: 'center', marginTop: '1rem' }}>
           Chưa có tài khoản?{' '}
           <button

@@ -1,7 +1,12 @@
 import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
 export default withAuth(
-  function middleware() {
+  function middleware(req: NextRequest) {
+    if (req.nextUrl.pathname.includes('/logout')) {
+      return NextResponse.redirect(new URL('/api/auth/signout', req.url));
+    }
     return null;
   },
   {
@@ -16,11 +21,10 @@ export const config = {
     '/dashboard',
     '/images',
     '/listitem',
-    '/register',
-    '/login',
   ],
   public: [
     '/register',
     '/login',
+    '/'
   ],
 };

@@ -26,7 +26,7 @@ function GreetingForm() {
   }
 
   function handleSkip() {
-    router.push('/login');
+    router.push('/');
   }
 
   return (

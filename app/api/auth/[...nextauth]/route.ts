@@ -25,6 +25,34 @@ declare module "next-auth/jwt" {
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    GitHubProvider({
+      clientId: process.env.GITHUB_ID!,
+      clientSecret: process.env.GITHUB_SECRET!,
+      authorization: {
+        params: {
+          scope: "read:user user:email",
+          allow_signup: "true"
+        }
+      },
+      profile(profile) {
+        return {
+          id: profile.id.toString(),
+          name: profile.name || profile.login,
+          email: profile.email,
+          image: profile.avatar_url,
+          login: profile.login
+        };
+      }
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "consent"
+        }
+      }
+    }),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -67,20 +95,6 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: { prompt: "consent" },
-      },
-    }),
-    GitHubProvider({
-      clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!,
-      authorization: {
-        params: { prompt: "consent" },
-      },
-    }),
   ],
   pages: {
     signIn: "/login"
@@ -90,47 +104,96 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      if (account?.provider === 'google') {
-        if (!token.email) {
-          throw new Error('Email is required for Google login');
+      if (account?.provider === 'google' || account?.provider === 'github') {
+        console.log('Account:', account);
+        console.log('User:', user);
+        console.log('Token:', token);
+
+        // Sử dụng ID GitHub làm email nếu không có email
+        const email = account.provider === 'github' && !user?.email 
+          ? `github_${account.providerAccountId}` 
+          : user?.email || token.email;
+
+        console.log('Determined email:', email);
+
+        // Nếu là GitHub và email đã tồn tại, tạo ID duy nhất
+        if (account.provider === 'github') {
+          const existingUser = await prisma.user_account.findUnique({
+            where: { 
+              email: email 
+            }
+          });
+
+          if (existingUser) {
+            // Nếu email đã tồn tại, tạo ID duy nhất cho GitHub
+            const githubId = `github_${user.id}`;
+            const existingGithubUser = await prisma.user_account.findUnique({
+              where: { 
+                email: githubId 
+              }
+            });
+
+            if (!existingGithubUser) {
+              const newUser = await prisma.user_account.create({
+                data: {
+                  name: user?.name || token.name || 'User',
+                  email: githubId,
+                  hashedPassword: null
+                }
+              });
+              token.id = newUser.id;
+              return token;
+            } else {
+              token.id = existingGithubUser.id;
+              return token;
+            }
+          }
         }
 
-        // Kiểm tra xem người dùng đã tồn tại chưa
+        if (!email) {
+          throw new Error('Email is required for OAuth login');
+        }
+
         const existingUser = await prisma.user_account.findUnique({
-          where: { email: token.email }
+          where: { 
+            email: email 
+          }
         });
 
         if (!existingUser) {
-          // Tạo tài khoản mới nếu chưa tồn tại
+          console.log('Creating new user...');
           const newUser = await prisma.user_account.create({
             data: {
-              name: token.name || 'User',
-              email: token.email,
-              // Không cần hashedPassword vì đây là tài khoản Google
+              name: user?.name || token.name || 'User',
+              email: email,
+              hashedPassword: null
             }
           });
+          console.log('New user created:', newUser);
           token.id = newUser.id;
         } else {
-          // Cập nhật thông tin nếu người dùng đã tồn tại
+          console.log('Using existing user:', existingUser);
           token.id = existingUser.id;
         }
+      } else if (user) {
+        token.id = user.id;
       }
       return token;
+    },
+    async session({ session, token }) {
+      if (token.id) {
+        session.user.id = token.id;
+      }
+      return session;
     },
     async redirect({ url, baseUrl }) {
       try {
         const targetUrl = new URL(url, baseUrl);
         return targetUrl.toString();
-      } catch (err) {
+      } catch {
         return baseUrl;
       }
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub as string;
-      }
-      return session;
-    },
+    }
   },
   secret: process.env.NEXTAUTH_SECRET
 };
