@@ -5,7 +5,8 @@ import GitHubProvider from "next-auth/providers/github";
 import { prisma } from "@/lib/prisma";
 import { compare } from "bcryptjs";
 import type { NextAuthOptions } from "next-auth";
-import image from "next/image";
+import { nullable } from "zod";
+
 
 declare module "next-auth" {
   interface Session {
@@ -68,8 +69,11 @@ export const authOptions: NextAuthOptions = {
         try {
           const user = await prisma.user_account.findUnique({
             where: {
-              email: credentials.email,
-            },
+              email_provider: {
+                email: credentials.email,
+                provider: "credentials"
+              }
+            }
           });
 
           if (!user || !user.hashedPassword) {
@@ -106,63 +110,28 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      if (account?.provider === 'google' || account?.provider === 'github') {
+      if (account?.provider === 'google' || account?.provider === 'github' || account?.provider === 'credentials') {
         console.log('Account:', account);
         console.log('User:', user);
         console.log('Token:', token);
-
-        // Sử dụng ID GitHub làm email nếu không có email
-        const email = account.provider === 'github' && !user?.email 
-          ? `github_${account.providerAccountId}` 
-          : user?.email || token.email || `github_${account.providerAccountId}`;
-
-        console.log('Determined email:', email);
-
-        // Nếu là GitHub và email đã tồn tại, tạo ID duy nhất
-        if (account.provider === 'github') {
-          const existingUser = await prisma.user_account.findUnique({
-            where: { 
-              email: email 
-            }
-          });
-
-          if (existingUser) {
-            // Nếu email đã tồn tại, tạo ID duy nhất cho GitHub
-            const githubId = `github_${account.providerAccountId}`;
-            const existingGithubUser = await prisma.user_account.findUnique({
-              where: { 
-                email: githubId 
-              }
-            });
-
-            if (!existingGithubUser) {
-              const newUser = await prisma.user_account.create({
-                data: {
-                  name: user?.name || token.name || 'User',
-                  email: githubId,
-                  hashedPassword: null,
-                  image: user?.image || token.image || null
-                }
-              });
-              token.id = newUser.id;
-              return token;
-            } else {
-              token.id = existingGithubUser.id;
-              return token;
-            }
-          }
-        }
-
+  
+        // Sử dụng email từ provider
+        const email = user?.email || token.email;
+  
         if (!email) {
           throw new Error('Email is required for OAuth login');
         }
-
+  
+        // Tìm kiếm người dùng dựa trên email và provider
         const existingUser = await prisma.user_account.findUnique({
-          where: { 
-            email: email 
+          where: {
+            email_provider: {
+              email: email,
+              provider: account.provider
+            }
           }
         });
-
+  
         if (!existingUser) {
           console.log('Creating new user...');
           const newUser = await prisma.user_account.create({
@@ -170,7 +139,8 @@ export const authOptions: NextAuthOptions = {
               name: user?.name || token.name || 'User',
               email: email,
               hashedPassword: null,
-              image: user?.image || token.image || null
+              image: user?.image || token.image || null,
+              provider: account.provider
             }
           });
           console.log('New user created:', newUser);
@@ -185,9 +155,11 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      console.log('Session:', session);
       if (token.id) {
         session.user.id = token.id;
       }
+      console.log('Session:', session);
       return session;
     },
     async redirect({ url, baseUrl }) {

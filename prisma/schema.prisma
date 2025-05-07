@@ -16,12 +16,14 @@ datasource db {
 model user_account {
   id             String      @id @default(cuid())
   name           String?
-  email          String      @unique
+  email          String      
   hashedPassword String?
   image          String?
+  provider       String?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   items          listItem[]
+  @@unique ([email, provider])
 }
 
 model listItem {

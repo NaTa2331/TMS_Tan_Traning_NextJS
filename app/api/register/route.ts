@@ -8,8 +8,14 @@ export async function POST(request: Request) {
   try {
     const { name, email, password } = await request.json();
 
-    // Kiểm tra xem email đã tồn tại chưa
-    if (await prisma.user_account.findUnique({ where: { email } })) {
+    if (await prisma.user_account.findUnique({
+      where: {
+        email_provider: {
+          email,
+          provider: "credentials"
+        }
+      }
+    })) {
       return NextResponse.json(
         { message: 'Email đã được sử dụng' },
         { status: 400 }
@@ -19,12 +25,12 @@ export async function POST(request: Request) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Tạo user mới
     await prisma.user_account.create({
       data: {
         name,
         email,
-        hashedPassword
+        hashedPassword,
+        provider: "credentials"
       }
     });
 

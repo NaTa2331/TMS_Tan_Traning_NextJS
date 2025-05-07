@@ -64,9 +64,16 @@ export default function UsersPage() {
             {users.map((user) => (
               <div key={user.id} className={styles.userCard}>
                 <div className={styles.userInfo}>
-                  <div className={styles.userAvatar}>
+                <div className={styles.userAvatar}>
+                  {user.image ? (
+                    <img 
+                      src={user.image}
+                      className={styles.avatarImage}
+                    />
+                  ) : (
                     <FaUser className={styles.icon} />
-                  </div>
+                  )}
+                </div>
                   <div className={styles.userDetails}>
                     <div className={styles.userName}>
                       <FaUser className={styles.icon} /> {user.name}
